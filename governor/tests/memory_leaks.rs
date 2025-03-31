@@ -1,3 +1,4 @@
+#![cfg(target_os = "linux")]
 #![cfg(feature = "std")]
 
 // This test uses procinfo, so can only be run on Linux.
