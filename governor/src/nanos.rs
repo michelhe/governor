@@ -12,6 +12,8 @@ use core::time::Duration;
 /// Nanos can not represent durations >584 years, but hopefully that
 /// should not be a problem in real-world applications.
 #[derive(PartialEq, Eq, Default, Clone, Copy, PartialOrd, Ord)]
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(transparent))]
 pub struct Nanos(u64);
 
 impl Nanos {

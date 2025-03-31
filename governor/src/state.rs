@@ -134,6 +134,110 @@ where
     }
 }
 
+/// Implementation of serialization for rate limiters.
+/// Since we cannot serialize the internal start reference point, we approximate it using the system time.
+/// The deserialization is not able to restore middleware hooks.
+#[cfg(all(feature = "std", feature = "serde"))]
+mod serde_support {
+    use core::ops::Add;
+    use std::time::SystemTime;
+
+    use super::*;
+
+    use crate::clock::Reference;
+    use serde::{de, ser, Deserialize, Serialize};
+
+    const STRUCT_NAME: &str = "RateLimiter";
+    const STRUCT_LEN: usize = 3;
+
+    impl<K, S, C, MW> Serialize for RateLimiter<K, S, C, MW>
+    where
+        S: StateStore<Key = K> + Serialize,
+        C: clock::Clock,
+        C::Instant: Reference + Add<Nanos>,
+        MW: RateLimitingMiddleware<C::Instant>,
+    {
+        fn serialize<S2>(&self, serializer: S2) -> Result<S2::Ok, S2::Error>
+        where
+            S2: serde::Serializer,
+        {
+            use ser::SerializeStruct;
+
+            let mut s = serializer.serialize_struct(STRUCT_NAME, STRUCT_LEN)?;
+
+            // Serialize the state store and GCRA configuration
+            s.serialize_field("state", &self.state)?;
+            s.serialize_field("gcra", &self.gcra)?;
+            // Calculate and serialize the timestamp
+            let elapsed_since_start = self.clock().now().duration_since(self.start);
+            let nanos_since_epoch: Nanos = SystemTime::now()
+                .saturating_sub(elapsed_since_start)
+                .duration_since(SystemTime::UNIX_EPOCH)
+                .map_err(|e| {
+                    serde::ser::Error::custom(format!(
+                        "Failed to calculate epoch timestamp from duration: {}",
+                        e
+                    ))
+                })?
+                .into();
+            s.serialize_field("nanos_since_epoch", &nanos_since_epoch)?;
+            s.end()
+        }
+    }
+
+    impl<'de, K, S, C, MW> Deserialize<'de> for RateLimiter<K, S, C, MW>
+    where
+        S: StateStore<Key = K> + Deserialize<'de>,
+        C: clock::Clock + Default,
+        C::Instant: Reference + Add<Nanos>,
+        MW: RateLimitingMiddleware<C::Instant>,
+    {
+        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: de::Deserializer<'de>,
+        {
+            // Helper struct to deserialize the fields
+            #[derive(Deserialize)]
+            struct Helper<S> {
+                state: S,
+                gcra: Gcra,
+                nanos_since_epoch: Nanos,
+            }
+
+            // Deserialize into helper structure
+            let deserialized = Helper::deserialize(deserializer)?;
+
+            // Initialize clock
+            let clock = C::default();
+
+            // Calculate current time since epoch
+            let now_since_epoch: Nanos = SystemTime::now()
+                .duration_since(SystemTime::UNIX_EPOCH)
+                .map_err(|e| {
+                    de::Error::custom(format!(
+                        "Failed to get current timestamp since epoch - duration: {:?}",
+                        e.duration()
+                    ))
+                })?
+                .into();
+
+            // Calculate time difference - if system clock moved, this will be 0.
+            let difference = now_since_epoch.duration_since(deserialized.nanos_since_epoch);
+
+            // Calculate start time by subtracting the difference from current time
+            let start = clock.now().saturating_sub(difference);
+
+            Ok(RateLimiter {
+                state: deserialized.state,
+                gcra: deserialized.gcra,
+                clock,
+                start,
+                middleware: PhantomData,
+            })
+        }
+    }
+}
+
 #[cfg(all(feature = "std", test))]
 mod test {
     use super::*;

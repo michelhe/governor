@@ -75,6 +75,7 @@ impl<P: clock::Reference> fmt::Display for NotUntil<P> {
 }
 
 #[derive(Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 pub(crate) struct Gcra {
     /// The "weight" of a single packet in units of time.
     t: Nanos,

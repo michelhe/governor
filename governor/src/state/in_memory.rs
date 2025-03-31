@@ -17,6 +17,7 @@ use portable_atomic::AtomicU64;
 /// Internally, the number tracked here is the theoretical arrival time (a GCRA term) in number of
 /// nanoseconds since the rate limiter was created.
 #[derive(Default)]
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 pub struct InMemoryState(AtomicU64);
 
 impl InMemoryState {

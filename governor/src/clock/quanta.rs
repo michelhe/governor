@@ -36,6 +36,7 @@ impl Clock for QuantaClock {
 /// A nanosecond-scale opaque instant (already scaled to reference time) returned from a
 /// [`QuantaClock`].
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 pub struct QuantaInstant(Nanos);
 
 impl Add<Nanos> for QuantaInstant {

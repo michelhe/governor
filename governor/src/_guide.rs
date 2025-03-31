@@ -194,3 +194,18 @@
 //! # } #[cfg(not(feature = "std"))] fn main() {}
 //! ```
 //!
+//! # Serialization
+//! > Only supported in `std` mode.
+//!
+//! When using the `serde` feature, rate limiter states can be serialized. However,
+//! there are important limitations to consider when serializing time references:
+//!
+//! The serialization of time references is based on the system clock's epoch.
+//! This approach is not very precise and can be affected by:
+//! - Clock drift
+//! - Timezone changes
+//! - System time modifications
+//!
+//! Use serialization with caution in distributed systems or when long-term storage
+//! is required, as it may lead to unexpected rate limiting behavior when deserializing
+//! on different systems or after significant time has passed.

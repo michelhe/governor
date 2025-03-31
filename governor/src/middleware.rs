@@ -70,6 +70,7 @@ use crate::{clock, nanos::Nanos, NotUntil, Quota};
 
 /// Information about the rate-limiting state used to reach a decision.
 #[derive(Clone, PartialEq, Eq, Debug)]
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 pub struct StateSnapshot {
     /// The "weight" of a single packet in units of time.
     t: Nanos,
@@ -215,6 +216,7 @@ pub trait RateLimitingMiddleware<P: clock::Reference>: fmt::Debug {
 }
 
 /// A middleware that does nothing and returns `()` in the positive outcome.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 pub struct NoOpMiddleware<P: clock::Reference = <clock::DefaultClock as clock::Clock>::Instant> {
     phantom: PhantomData<P>,
 }
@@ -250,6 +252,7 @@ impl<P: clock::Reference> RateLimitingMiddleware<P> for NoOpMiddleware<P> {
 /// Middleware that returns the state of the rate limiter if a
 /// positive decision is reached.
 #[derive(Debug)]
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 pub struct StateInformationMiddleware;
 
 impl<P: clock::Reference> RateLimitingMiddleware<P> for StateInformationMiddleware {

@@ -36,6 +36,7 @@ libc = "0.2.70"
 futures-executor = "0.3.31"
 proptest = "1.0.0"
 assertables = "9.5.0"
+serde_json = "1.0.64"
 
 [features]
 default = ["std", "dashmap", "jitter", "quanta"]
@@ -43,6 +44,7 @@ quanta = ["dep:quanta"]
 std = ["nonzero_ext/std", "dep:futures-timer", "dep:futures-util", "dep:futures-sink", "dep:parking_lot"]
 jitter = ["dep:rand", "dep:getrandom"]
 no_std = ["hashbrown/alloc"]
+serde = ["std", "dep:serde", "portable-atomic/serde", "dashmap/serde", "hashbrown/serde", "parking_lot/serde"]
 
 [dependencies]
 nonzero_ext = { version = "0.3.0", default-features = false }
@@ -62,3 +64,9 @@ cfg-if = "1.0"
 smallvec = "1.6.1"
 web-time = "1.1.0"
 hashbrown = "0.15.2"
+
+[dependencies.serde]
+version = "1.0"
+optional = true
+default-features = false
+features = ["derive"]
